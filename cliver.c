@@ -33,7 +33,8 @@ void *server(){
     		memset(sendBuff, '0', sizeof(sendBuff)); 
 
    		serv_addr.sin_family = AF_INET;
-                serv_addr.sin_addr.s_addr = inet_addr(addr_lan[dest]);
+                //serv_addr.sin_addr.s_addr = inet_addr(addr_lan[dest]);
+    		serv_addr.sin_addr.s_addr = inet_addr(addr_lan[numero]);
     		//serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     		serv_addr.sin_port = htons(5000); 
 
