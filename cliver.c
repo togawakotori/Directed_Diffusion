@@ -13,6 +13,8 @@
 
 pthread_t tid[2];
 
+const char * addr_lan[]={"192.168.1.104","192.168.1.125","192.168.1.154","192.168.1.178","192.168.1.179","192.168.1.180"};
+const int numero=3;
 void *server(){
 	pthread_t id = pthread_self();
 	//this is server
@@ -22,7 +24,8 @@ void *server(){
 
     		char sendBuff[1025];
     		char text[1024];
-    		char name[10] = "GL";
+    		//char name[10] = "GL";
+		char * name=addr_lan[numero];
     		time_t ticks; 
 
     		listenfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -56,7 +59,7 @@ void *server(){
 	}
 
 
-void *client(){
+void *client(char * destaddr){
 	int sockfd = 0, n = 0;
     	char recvBuff[1024];
     	struct sockaddr_in serv_addr; 
@@ -79,7 +82,8 @@ void *client(){
 
     	serv_addr.sin_family = AF_INET;
     	serv_addr.sin_port = htons(5000); 
-    	serv_addr.sin_addr.s_addr = inet_addr("192.168.1.174");
+    //	serv_addr.sin_addr.s_addr = inet_addr("192.168.1.174");
+        serv_addr.sin_addr.s_addr = inet_addr(destaddr);
 
     	if( connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     	{
@@ -107,8 +111,9 @@ int main(){
 	int i = 0;
 	int err[2] = {0};
 	void *status;
+       
 	err[1] = pthread_create(&(tid[0]), NULL, &server, NULL);
-	err[2] = pthread_create(&(tid[1]), NULL, &client, NULL);
+	err[2] = pthread_create(&(tid[1]), NULL, &client(addr_lan[2]), NULL);
 	pthread_join(tid[0], &status);
 	return 0;
 }
