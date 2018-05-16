@@ -113,7 +113,7 @@ int main(){
 	void *status;
        
 	err[1] = pthread_create(&(tid[0]), NULL, &server, NULL);
-	err[2] = pthread_create(&(tid[1]), NULL, &client(addr_lan[2]), NULL);
+	err[2] = pthread_create(&(tid[1]), NULL, &client, &addr_lan[2]);
 	pthread_join(tid[0], &status);
 	return 0;
 }
