@@ -13,8 +13,9 @@
 
 pthread_t tid[2];
 
-const char * addr_lan[]={"192.168.1.104","192.168.1.125","192.168.1.154","192.168.1.178","192.168.1.179","192.168.1.180"};
-const int numero=3;
+char * addr_lan[]={"192.168.1.104","192.168.1.125","192.168.1.154","192.168.1.178","192.168.1.179","192.168.1.180"};
+int numero=3;
+
 void *server(){
 	pthread_t id = pthread_self();
 	//this is server
@@ -83,6 +84,7 @@ void *client(char * destaddr){
     	serv_addr.sin_family = AF_INET;
     	serv_addr.sin_port = htons(5000); 
     //	serv_addr.sin_addr.s_addr = inet_addr("192.168.1.174");
+         printf("%s\n",destaddr);
         serv_addr.sin_addr.s_addr = inet_addr(destaddr);
 
     	if( connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
@@ -113,7 +115,7 @@ int main(){
 	void *status;
        
 	err[1] = pthread_create(&(tid[0]), NULL, &server, NULL);
-	err[2] = pthread_create(&(tid[1]), NULL, &client, &addr_lan[2]);
+	err[2] = pthread_create(&(tid[1]), NULL, &client, addr_lan[2]);
 	pthread_join(tid[0], &status);
 	return 0;
 }
