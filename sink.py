@@ -13,7 +13,7 @@ import time
 # 兴趣：int + nodeID(目标点，1位) + intID(3位) + interval(4位) + exp(2位) example:int2001000520
 # 数据：dat + nodeID(来源点，1位) + intID(3位) + interval(4位) + dataID(3位) + data
 nodeID = 0
-neighbour = [('192.168.137.193',7773)]
+neighbour = [('192.168.1.178',7772),('192.168.1.154',7771)]
 
 intCache = {} # intID:([interval], exp, tgt)
 dataCache = {} # intID:[dataID]
@@ -103,7 +103,6 @@ class client(threading.Thread):
         global threadID
         while True:
             msg = input()
-            msg = msg[:len(msg)-2] + str(int(time.time())+int(msg[len(msg)-2:len(msg)]))
             tgt = msg[3]
             intID = msg[4:7]
             interval = msg[7:11]
