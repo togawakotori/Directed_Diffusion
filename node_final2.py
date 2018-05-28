@@ -236,6 +236,7 @@ class server(threading.Thread):
                             #print('Msg:', msg,' Received from ',neighbour[index][0])
                             thread3 = client(threadID, 'client'+str(threadID),
                                              [addr], [port], msg, delay, dataID)
+                            threadID += 1
                             thread3.start()
                                 
             clientsocket.close()
