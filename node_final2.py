@@ -258,12 +258,13 @@ class client(threading.Thread):
         for i in range(len(self.addr)):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
+                time.sleep(self.delay)
                 s.connect((self.addr[i], self.port[i]))
                 s.send(self.msg.encode('utf-8'))
                 s.close()
             except:
                 print("Connection to " + self.addr[i] + "failed")
-            time.sleep(self.delay)
+            
             print('The delay of message ', self.dataID ,' is', self.delay,' seconds, to ', self.addr[i])              
             
             #setup(R, G, B)
