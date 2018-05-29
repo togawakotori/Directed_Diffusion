@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Sat May 19 13:49:40 2018
-
-@author: longzhan
-"""
 
 import pickle
 import socket
