@@ -13,23 +13,14 @@ network are removed in the routing protocol; To promise the robustness of
 network, the network will adapt to a changed topology; The cases of multisources
 or multi-sinks are also considered.
 
-# Plan
+# Files
 
-Our plan can be divided into several phases (Estimated duration of each phase
-is attached in the parentheses):
+## sink_release.py
 
-- We should first read the paper carefully. (2 days)
+## node_release.py
 
-- Then, we should realize the basic function, the routing protocol, by using
-Raspberry Pis. (3 days)
+Need to modify the information of neighbors for each node.
 
-- Next, data aggregation should be implemented. The comparison of energy
-consumption between two versions should be done. (7 days)
-
-- Finally, we should make the protocol robust against to the changing topology.
-(7 days)
-
-- If possible, we can try to improve the protocol. (3 days)
 
 # References
 
