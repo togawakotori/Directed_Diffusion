@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Sat May 19 13:49:40 2018
 
-@author: longzhan
-"""
-
+import pickle
 import socket
 import threading
 import time
@@ -63,17 +59,39 @@ def destroy():
 	off()
 	GPIO.cleanup()
     
-nodeID = 3 #注意改动
+nodeID = 2 #注意改动
 #注意改动
 threadID = 1
-neighbour = [('192.168.1.178',7772),
-             ('192.168.1.154',7771)]
+
+neighbour = [('192.168.1.102',7770),
+             ('192.168.1.193',7771),
+             ('192.168.1.124',7773)]
+
 intCache = {} # intID:(nodeID, [interval], exp, [grad])
 dataCache = {} # intID:[dataID]
 first = {} # intID:index #第一次接受特定请求返回的数据包的来源
 origin_interval = {} # intID:interval
 rflag = {} #init:flag
 global_delay = 10000 #10/interval
+
+
+
+def checkpoint():
+    output1=open('intcache.pkl','wb')
+    if len(intCache) != 0:
+        pickle.dump(intCache,output1)
+    output1.close()
+    
+    output2=open('rflag.pkl','wb')
+    if len(rflag) != 0:
+        pickle.dump(rflag,output2)
+    output2.close()
+
+    output3=open('datacache.pkl','wb')
+    if len(dataCache) != 0:
+        pickle.dump(dataCache,output3)
+    output3.close() 
+
 def checkCache(): #删除过期记录
     dellist = []
     for key in intCache:
@@ -84,6 +102,7 @@ def checkCache(): #删除过期记录
             del(intCache[key])
         if key in dataCache:
             del(dataCache[key])
+    checkpoint()
 
 def num2str(num, size):
     num = str(num)
@@ -133,6 +152,9 @@ class server(threading.Thread):
         self.name = name
         self.addr = addr
         self.port = port
+        #checkpoint()
+
+            
     def run(self):
         global threadID
         serversocket = socket.socket(
@@ -152,14 +174,14 @@ class server(threading.Thread):
                 tgt = msg[3]
                 intID = msg[4:7]
                 interval = msg[7:11]
-                expire = str(int(time.time())+int(msg[len(msg)-2:len(msg)]))
+                expire = str(int(time.time())+int(msg[len(msg)-3:len(msg)]))
                 checkCache()
                 tmp = 10/int(interval)
                 global global_delay
                 if int(tgt) == nodeID: #命中，返回数据
                     if tmp<global_delay: #总是选最快速率转发
                         global_delay = tmp
-                    print('Receive interest message:',msg)
+                    print('[HIT] Receive interest message:',msg)
                     if intID not in intCache:
                         thread4 = broadcast(threadID, 'bc', intID, expire)
                         thread4.start()
@@ -167,24 +189,28 @@ class server(threading.Thread):
                         intCache[intID] = (tgt,[interval], expire, [index])
                         origin_interval[intID] = interval
                         rflag[intID] = False
+                        checkpoint()
                 else: #不命中，需要继续转发
-                    print('Receive interest message:',msg)
+                    print('[NON] Receive interest message:',msg)
                     if intID in intCache:
                         if index not in intCache[intID][3]: #增加gradient
                             intCache[intID][3].append(index)
                             intCache[intID][1].append(interval)
+                            checkpoint()
                         elif intCache[intID][1][intCache[intID][3].index(index)] != \
                             interval:
                                 intCache[intID][1][intCache[intID][3].index(index)] \
                                 = interval
                                 rflag[intID] = True  #说明当前节点被增强了
                                 #print(rflag)
+                                checkpoint()
                         else:
                             pass
                     else: #创建新的entry
                         intCache[intID] = (tgt,[interval], expire, [index])
                         origin_interval[intID] = interval
                         rflag[intID] = False
+                        checkpoint()
                     if int(time.time()) - int(expire) <= 0:
                         if rflag[intID] == False: #正常转发
                             addr = []
@@ -212,31 +238,37 @@ class server(threading.Thread):
                                     thread2.start()
                                     break
             else:#数据报文
+                print('Msg:', msg,' Received from ',neighbour[index][0])    
                 intID = msg[4:7]
                 interval = msg[7:11]
                 dataID = msg[11:14]
+                #print(intCache)
                 if intID in intCache:
                     grad = intCache[intID][3]
                     expInterval = intCache[intID][1]
                     if intID not in dataCache:
                         dataCache[intID] = []
                         first[intID] = index
+                        checkpoint()
                     if dataID not in dataCache[intID]:
                         dataCache[intID].append(dataID)
+                        checkpoint()
                         for i in range(len(grad)):
                             addr = neighbour[grad[i]][0]
                             port = neighbour[grad[i]][1]
                             #按最大延迟转发
                             delay = max(10/int(expInterval[i]),10/(int(interval)))
-                            print('Data Delay to ',i,':',delay)
+                            #print('Msg:', msg,' Data Delay to ',i,':',delay)
+                            #print('Msg:', msg,' Received from ',neighbour[index][0])
                             thread3 = client(threadID, 'client'+str(threadID),
-                                             [addr], [port], msg, delay)
+                                             [addr], [port], msg, delay, dataID)
+                            threadID += 1
                             thread3.start()
                                 
             clientsocket.close()
 
 class client(threading.Thread):
-    def __init__(self, threadID, name, addr, port, msg, delay=0):
+    def __init__(self, threadID, name, addr, port, msg, delay=0, dataID=0):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
@@ -244,6 +276,7 @@ class client(threading.Thread):
         self.port = port
         self.msg = msg
         self.delay = delay
+        self.dataID = dataID
     def run(self):
         color_index = 0
         if self.msg[:3] == 'int':
@@ -251,19 +284,44 @@ class client(threading.Thread):
         for i in range(len(self.addr)):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
+                time.sleep(self.delay)
                 s.connect((self.addr[i], self.port[i]))
+                s.send(self.msg.encode('utf-8'))
+                s.close()
             except:
                 print("Connection to " + self.addr[i] + "failed")
-            time.sleep(self.delay)
-            s.send(self.msg.encode('utf-8'))
-            s.close()
+            
+            print('The delay of message ', self.dataID ,' is', self.delay,' seconds, to ', self.addr[i])              
+            
             #setup(R, G, B)
             #setColor(colors[color_index])
             #destroy()
 
- 
+try:
+    #global intCache
+    print("Loading checkpoint")    
+    input1= open('intcache.pkl','rb')
+    intCache = pickle.load(input1)
+    print(intCache)
+    input1.close()
+except:
+    print("No checkpoint: intCache")
+
+try:    
+    input2= open('rflag.pkl','rb')
+    rflag = pickle.load(input2)
+    input2.close()
+except:
+    print("No checkpoint: rflag")
+
+try:
+    input3= open('datacache.pkl','rb')
+    dataCache = pickle.load(input3)
+    input3.close()
+except:
+    print("No checkpoint: dataCache")
      
-thread1 = server(0, 'server', '', 7773) #注意改动
+thread1 = server(0, 'server', '', 7772) #注意改动
     
 thread1.start()
    

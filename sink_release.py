@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Sat May 19 13:35:20 2018
-
-@author: longzhan
-"""
 
 import socket
 import threading
@@ -13,11 +8,12 @@ import time
 # 兴趣：int + nodeID(目标点，1位) + intID(3位) + interval(4位) + exp(2位) example:int2001000520
 # 数据：dat + nodeID(来源点，1位) + intID(3位) + interval(4位) + dataID(3位) + data
 nodeID = 0
-neighbour = [('192.168.1.178',7772),('192.168.1.154',7771)]
+neighbour = [('192.168.1.178',7772),('192.168.1.193',7771)]
 
 intCache = {} # intID:([interval], exp, tgt)
 dataCache = {} # intID:[dataID]
 threadID = 3
+
 
 def num2str(num, size):
     num = str(num)
@@ -33,6 +29,7 @@ class server(threading.Thread):
         self.name = name
         self.addr = addr
         self.port = port
+        self.time_t = int(time.time()) 
     def run(self):
         global threadID
         serversocket = socket.socket(
@@ -68,9 +65,15 @@ class server(threading.Thread):
                         thread3.start()
                         threadID += 1
                         print('Reinforcement interest sent:', msg)
-                    elif dataID not in dataCache[intID]:
+                    elif dataID not in dataCache[intID]:                        
+                        if int(dataID) > 0:
+                            delta_t=int(time.time())-self.time_t;
+                            self.time_t=int(time.time()) 
+                        else:
+                            delta_t=0;
                         dataCache[intID].append(dataID)
                         print(data)
+                        #print(data,' delta_t=', delta_t)
                     else:
                         pass
             clientsocket.close()
